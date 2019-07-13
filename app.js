@@ -115,7 +115,7 @@ app.post("/getfriendlist", (request, response) => {
         if (error) {
             return response.status(500).send(error);
         }
-        response.send(prettifyJSON({ success: true, friends: result, count: result.length }));       
+        response.send(prettifyJSON({ success: true, friends: result[0].friends, count: result.length }));       
     });   
 });
 
@@ -133,13 +133,36 @@ app.post("/Commonfriend", (request, response) => {
         return response.send(prettifyJSON(result));
     }
 
-    var query = { "id": friendA };
+    var commonFriend = [];
+    var frndListA=[];  
+    var frndListB=[];  
+
+    var query = { "id": friendA };    
     collection.find(query).toArray((error, result) => {
         if (error) {
             return response.status(500).send(error);
-        }               
+        }  
+       // console.log(result[0].id);
+       frndListA=result[0].friends;  
+       
+       //runnig inside code becos of asynch mode
+       var query = { "id": friendB };    
+       collection.find(query).toArray((error, result) => {
+           if (error) {
+               return response.status(500).send(error);
+           }            
+          frndListB=result[0].friends;  
+          
+
+          for ( var i = 0; i < frndListA.length; i++ ) {
+            for ( var e = 0; e < frndListB.length; e++ ) {
+                if ( frndListA[i] === frndListB[e] ) commonFriend.push( a[i] );
+            }
+        }
+        response.send(prettifyJSON({ success: true, friends: commonFriend, count: commonFriend.length }));
+          
+       }); 
     }); 
-    
 });
 
 app.get("/getList1", (request, response) => {
