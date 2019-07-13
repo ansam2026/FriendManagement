@@ -165,6 +165,54 @@ app.post("/Commonfriend", (request, response) => {
     }); 
 });
 
+//4. subscribe to email
+app.post("/subscribe", (request, response) => {
+
+    var friends = request.body.friends;
+
+    var friendA = friends[0];
+    var friendB = friends[1];
+
+    var result = validateFriends(friends);
+
+    if (result.success == false) {
+        return response.send(prettifyJSON(result));
+    }
+
+    var commonFriend = [];
+    var frndListA=[];  
+    var frndListB=[];  
+
+    var query = { "id": friendA };    
+    collection.find(query).toArray((error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }  
+       // console.log(result[0].id);
+       frndListA=result[0].friends;  
+       
+       //runnig inside code becos of asynch mode
+       var query = { "id": friendB };    
+       collection.find(query).toArray((error, result) => {
+           if (error) {
+               return response.status(500).send(error);
+           }            
+          frndListB=result[0].friends;  
+          
+
+          for ( var i = 0; i < frndListA.length; i++ ) {
+            for ( var e = 0; e < frndListB.length; e++ ) {
+                if ( frndListA[i] === frndListB[e] ) commonFriend.push( a[i] );
+            }
+        }
+        response.send(prettifyJSON({ success: true, friends: commonFriend, count: commonFriend.length }));
+          
+       }); 
+    }); 
+});
+
+
+
 app.get("/getList1", (request, response) => {
     var query = { email: 'test1@fm.com' };
     collection.find(query).toArray((error, result) => {
