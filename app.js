@@ -115,9 +115,31 @@ app.post("/getfriendlist", (request, response) => {
         if (error) {
             return response.status(500).send(error);
         }
-        response.send(result);
-       // console.log(result);
+        response.send(prettifyJSON({ success: true, friends: result, count: result.length }));       
     });   
+});
+
+//3. get common friend
+app.post("/Commonfriend", (request, response) => {
+
+    var friends = request.body.friends;
+
+    var friendA = friends[0];
+    var friendB = friends[1];
+
+    var result = validateFriends(friends);
+
+    if (result.success == false) {
+        return response.send(prettifyJSON(result));
+    }
+
+    var query = { "id": friendA };
+    collection.find(query).toArray((error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }               
+    }); 
+    
 });
 
 app.get("/getList1", (request, response) => {
