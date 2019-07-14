@@ -36,28 +36,6 @@ app.get("/friends/getFullList", (request, response) => {
     });
 });
 
-//insert initial data in friends collection
-app.get("/friends/addAll", (request, response) => {
-    collection.insertOne({
-        "id": "andy@example.com",
-        "friends": [
-            "john@example.com"
-        ],
-        "subscribe": [
-            "lisa@example.com"
-        ],
-        "follower": [
-            "tim@example.com"
-        ],
-        "block": [
-            "james@example.com"
-        ]
-    }, function (err, result) {
-        assert.equal(err, null);
-        response.send(result);
-        console.log("Inserted document into the friends collection.");
-    });
-});
 
 //1. Update document to make friend connection
 app.post("/Addfriend", (request, response) => {
@@ -96,7 +74,7 @@ app.post("/Addfriend", (request, response) => {
                         return response.send(results);
                     }
                 });
-                return response.send(prettifyJSON({ success: true })); 
+            return response.send(prettifyJSON({ success: true }));
         }
     });
 });
@@ -115,8 +93,8 @@ app.post("/getfriendlist", (request, response) => {
         if (error) {
             return response.status(500).send(error);
         }
-        response.send(prettifyJSON({ success: true, friends: result[0].friends, count: result.length }));       
-    });   
+        response.send(prettifyJSON({ success: true, friends: result[0].friends, count: result.length }));
+    });
 });
 
 //3. get common friend
@@ -134,35 +112,38 @@ app.post("/Commonfriend", (request, response) => {
     }
 
     var commonFriend = [];
-    var frndListA=[];  
-    var frndListB=[];  
+    var frndListA = [];
+    var frndListB = [];
 
-    var query = { "id": friendA };    
+    var query = { "id": friendA };
     collection.find(query).toArray((error, result) => {
         if (error) {
             return response.status(500).send(error);
-        }  
-       // console.log(result[0].id);
-       frndListA=result[0].friends;  
-       
-       //runnig inside code becos of asynch mode
-       var query = { "id": friendB };    
-       collection.find(query).toArray((error, result) => {
-           if (error) {
-               return response.status(500).send(error);
-           }            
-          frndListB=result[0].friends;  
-          
-
-          for ( var i = 0; i < frndListA.length; i++ ) {
-            for ( var e = 0; e < frndListB.length; e++ ) {
-                if ( frndListA[i] === frndListB[e] ) commonFriend.push( a[i] );
-            }
         }
-        response.send(prettifyJSON({ success: true, friends: commonFriend, count: commonFriend.length }));
-          
-       }); 
-    }); 
+        // console.log(result[0].id);
+        frndListA = result[0].friends;
+
+        //runnig inside code becos of asynch mode
+        var query = { "id": friendB };
+        collection.find(query).toArray((error, result) => {
+            if (error) {
+                return response.status(500).send(error);
+            }
+            frndListB = result[0].friends;
+
+            if (frndListA != null && frndListB != null) {
+                for (var i = 0; i < frndListA.length; i++) {
+                    for (var e = 0; e < frndListB.length; e++) {
+                        if (frndListA[i] === frndListB[e]) {
+                            commonFriend.push(frndListA[i]);
+                        }
+                    }
+                }
+            }
+            response.send(prettifyJSON({ success: true, friends: commonFriend, count: commonFriend.length }));
+
+        });
+    });
 });
 
 //4. subscribe to email
@@ -179,25 +160,24 @@ app.post("/subscribe", (request, response) => {
     if (result.success == false) {
         return response.send(prettifyJSON(result));
     }
-   
+
     collection.update(
-		{ "id": requestor },
-		{
-			$addToSet: { "subscribe" : target }
-		},
-		{ upsert: true }, function(err, results) {
-            if (err)
-            { return response.status(500).send(err);}
-	});
-	collection.update(
-		{ "id": target },
-		{
-			$addToSet: { "follower" : requestor }
-		},
-		{ upsert: true }, function(err, results) {
-			if (err)   { return response.status(500).send(err);}	    	
-    });  
-    return response.send(prettifyJSON({ success: true }));   
+        { "id": requestor },
+        {
+            $addToSet: { "subscribe": target }
+        },
+        { upsert: true }, function (err, results) {
+            if (err) { return response.status(500).send(err); }
+        });
+    collection.update(
+        { "id": target },
+        {
+            $addToSet: { "follower": requestor }
+        },
+        { upsert: true }, function (err, results) {
+            if (err) { return response.status(500).send(err); }
+        });
+    return response.send(prettifyJSON({ success: true }));
 });
 
 //5. Block from updates
@@ -214,20 +194,86 @@ app.post("/block", (request, response) => {
     if (result.success == false) {
         return response.send(prettifyJSON(result));
     }
-   
+
     collection.update(
-		{ "id": requestor },
-		{
-			$addToSet: { "block" : target }
-		},
-		{ upsert: true }, function(err, results) {
-            if (err)  
-             { return response.status(500).send(err);}
-             return response.send(prettifyJSON({ success: true }));  
-	});
+        { "id": requestor },
+        {
+            $addToSet: { "block": target }
+        },
+        { upsert: true }, function (err, results) {
+            if (err) { return response.status(500).send(err); }
+            return response.send(prettifyJSON({ success: true }));
+        });
 });
 
+//6. get recipient emails to recv updates 
+app.post("/recipients", (request, response) => {
 
+    var sender = request.body.sender;
+    var result = checkIfEmailInString(sender);
+    if (result.success == false) {
+        return response.send(prettifyJSON(result));
+    }
+
+    var text = request.body.text;
+    var recipientList = [];
+    var friendList = [];
+    var followerList = [];
+    var emailInText = [];
+    var blocks = [];
+
+    var query = { "id": sender };
+    collection.find(query).toArray((error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }
+        friendList = result[0].friends;
+        followerList = result[0].follower;
+        blocks = result[0].block;
+
+        //add friends
+        if (friendList != null) {
+            for (var i = 0; i < friendList.length; i++) {
+                if (!recipientList.includes(friendList[i])) {
+                    recipientList.push(friendList[i]);
+                }
+            }
+        }
+
+        //add followers
+        if (followerList != null) {
+            for (var i = 0; i < followerList.length; i++) {
+                if (!recipientList.includes(followerList[i])) {
+                    recipientList.push(followerList[i]);
+                }
+            }
+        }
+
+        //add text email
+        emailInText = getEmailInString(text);
+        if (emailInText != null) {
+            for (var i = 0; i < emailInText.length; i++) {
+                if (!recipientList.includes(emailInText[i])) {
+                    recipientList.push(emailInText[i]);
+                }
+            }
+        }
+
+        //remove block email
+        if (blocks != null) {
+            var index;
+            for (var i = 0; i < blocks.length; i++) {
+                index = recipientList.indexOf(blocks[i]);
+                if (index > -1) {
+                    recipientList.splice(index, 1);
+                }
+            }
+        }
+
+        response.send(prettifyJSON({ success: true, recipients: recipientList, count: recipientList.length }));
+
+    });
+});
 
 app.get("/getList1", (request, response) => {
     var query = { email: 'test1@fm.com' };
@@ -284,18 +330,48 @@ function validateFriends(friends) {
     return { success: true };
 };
 
-var checkIfEmailInString = function (text) { 
+var checkIfEmailInString = function (text) {
     var regex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
-    var isEmailTxt =text.match(regex);
-    if(isEmailTxt){
+    var isEmailTxt = text.match(regex);
+    if (isEmailTxt) {
         return { success: true };
     }
-    else{
+    else {
         return { success: false, reason: "incorrect email format" };
     }
-    
+
+}
+
+var getEmailInString = function (text) {
+    var regex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+    return text.match(regex);
 }
 
 var prettifyJSON = function (jsonData) {
     return JSON.stringify(jsonData, null, 4);
 }
+
+
+
+//insert initial data in friends collection
+app.get("/friends/addAll", (request, response) => {
+    collection.insertOne({
+        "id": "andy@example.com",
+        "friends": [
+            "john@example.com"
+        ],
+        "subscribe": [
+            "lisa@example.com"
+        ],
+        "follower": [
+            "tim@example.com"
+        ],
+        "block": [
+            "james@example.com"
+        ]
+    }, function (err, result) {
+        assert.equal(err, null);
+        response.send(result);
+        console.log("Inserted document into the friends collection.");
+    });
+});
