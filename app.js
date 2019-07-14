@@ -200,6 +200,33 @@ app.post("/subscribe", (request, response) => {
     return response.send(prettifyJSON({ success: true }));   
 });
 
+//5. Block from updates
+app.post("/block", (request, response) => {
+
+    var requestor = request.body.requestor;
+    var result = checkIfEmailInString(requestor);
+    if (result.success == false) {
+        return response.send(prettifyJSON(result));
+    }
+
+    var target = request.body.target;
+    var result = checkIfEmailInString(target);
+    if (result.success == false) {
+        return response.send(prettifyJSON(result));
+    }
+   
+    collection.update(
+		{ "id": requestor },
+		{
+			$addToSet: { "block" : target }
+		},
+		{ upsert: true }, function(err, results) {
+            if (err)  
+             { return response.status(500).send(err);}
+             return response.send(prettifyJSON({ success: true }));  
+	});
+});
+
 
 
 app.get("/getList1", (request, response) => {
