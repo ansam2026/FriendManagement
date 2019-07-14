@@ -1,0 +1,30 @@
+{
+  "name": "frndapi",
+  "version": "1.0.0",
+  "description": "friend manaement",
+  "main": "app.js",
+  "dependencies": {
+    "assert": "^2.0.0",
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "mongodb": "^3.2.7",
+    "validator": "^11.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ansam2026/FriendManagement.git"
+  },
+  "keywords": [
+    "Friend"
+  ],
+  "author": "Jitender Kumar",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ansam2026/FriendManagement/issues"
+  },
+  "homepage": "https://github.com/ansam2026/FriendManagement#readme"
+}
