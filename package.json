@@ -5,8 +5,8 @@
   "main": "app.js",
   "dependencies": {
     "assert": "^2.0.0",
-    "body-parser": "^1.19.0",
-    "express": "^4.17.1",
+    "body-parser": "^1.20.1",
+    "express": "^4.18.2",
     "mongodb": "^3.2.7",
     "validator": "^11.1.0"
   },
